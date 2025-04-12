@@ -15,7 +15,8 @@
 
             const data = await res.json();
             if (data.link) {
-                document.getElementById("link-gerado").innerText = data.link;
+                const linkElement = document.getElementById("link-gerado");
+                linkElement.innerHTML = `<a href="${data.link}" target="_blank">${data.link}</a>`;
                 document.getElementById("link-area").style.display = "block";
             } else {
                 alert("Erro ao gerar link.");
@@ -58,7 +59,7 @@
 
         <div id="link-area" style="display:none;">
             <h3>LINK GERADO</h3>
-            <p id="link-gerado" style="word-break: break-all;"></p>
+            <p id="link-gerado" style="word-break: break-word;"></p>
         </div>
 
         <h2>📍 IPs e Localizações</h2>
