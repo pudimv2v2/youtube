@@ -33,7 +33,8 @@ def gerar_link():
 @app.route('/r/<tracking_id>')
 def rastrear(tracking_id):
     youtube_url = request.args.get('v')
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ip_raw = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ip = ip_raw.split(',')[0].strip()  # Usa apenas o primeiro IP da lista
 
     try:
         location_data = requests.get(f"http://ip-api.com/json/{ip}").json()
@@ -46,7 +47,7 @@ def rastrear(tracking_id):
 
     log_entry = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "ip_address": ip,
+        "ip_address": ip_raw,
         "location": local,
         "tracking_id": tracking_id
     }
