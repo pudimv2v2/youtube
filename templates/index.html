@@ -8,7 +8,6 @@
         async function gerarLink() {
             const youtubeUrl = document.getElementById("youtube-url").value;
             const res = await fetch('/gerar_link', {
-
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ youtube_url: youtubeUrl })
@@ -29,9 +28,9 @@
 
             logs.forEach(log => {
                 const row = `<tr>
-                    <td>${log.date}</td>
+                    <td>${log.data}</td> <!-- Ajustado de 'date' para 'data' -->
                     <td>${log.ip}</td>
-                    <td>${log.location}</td>
+                    <td>${log.localizacao}</td> <!-- Ajustado de 'location' para 'localizacao' -->
                     <td>${log.id}</td>
                 </tr>`;
                 tbody.innerHTML += row;
