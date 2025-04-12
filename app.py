@@ -46,10 +46,10 @@ def rastrear(tracking_id):
         local = "Desconhecida"
 
     log_entry = {
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "ip_address": ip_raw,
-        "location": local,
-        "tracking_id": tracking_id
+        "data": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # <- nome padronizado para o front
+        "ip": ip,                                                        # <- só o IP principal
+        "localizacao": local,                                            # <- localização completa
+        "id": tracking_id                                                # <- ID do link
     }
 
     with open(LOG_FILE, 'a') as f:
