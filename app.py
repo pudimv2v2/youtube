@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, jsonify
+from flask import Flask, request, render_template, redirect, jsonify, session
 import os
 import json
 import uuid
@@ -6,18 +6,23 @@ import datetime
 import requests
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Necessário para as sessões do Flask
 LOG_FILE = 'log.json'
 
 @app.route('/')
 def index():
     logs = []
-    if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, 'r') as f:
-            for line in f:
-                try:
-                    logs.append(json.loads(line))
-                except:
-                    pass
+    if 'logs' in session:  # Verifica se há logs na sessão do usuário
+        logs = session['logs']  # Recupera os logs da sessão atual
+    else:
+        if os.path.exists(LOG_FILE):
+            with open(LOG_FILE, 'r') as f:
+                for line in f:
+                    try:
+                        logs.append(json.loads(line))
+                    except:
+                        pass
+        session['logs'] = logs  # Armazena os logs na sessão
     return render_template('index.html', logs=logs)
 
 @app.route('/gerar_link', methods=['POST'])
@@ -52,6 +57,11 @@ def rastrear(tracking_id):
         "id": tracking_id                                                # <- ID do link
     }
 
+    # Armazena o log na sessão atual do usuário
+    if 'logs' not in session:
+        session['logs'] = []  # Cria a lista de logs caso não exista
+    session['logs'].append(log_entry)
+
     with open(LOG_FILE, 'a') as f:
         f.write(json.dumps(log_entry) + '\n')
 
@@ -59,14 +69,8 @@ def rastrear(tracking_id):
 
 @app.route('/get_logs')
 def get_logs():
-    logs = []
-    if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, 'r') as f:
-            for line in f:
-                try:
-                    logs.append(json.loads(line))
-                except:
-                    pass
+    # Apenas recupera os logs da sessão do usuário
+    logs = session.get('logs', [])
     return jsonify(logs)
 
 if __name__ == '__main__':
