@@ -17,24 +17,31 @@
             if (data.link) {
                 document.getElementById("link-gerado").innerText = data.link;
                 document.getElementById("link-area").style.display = "block";
+            } else {
+                alert("Erro ao gerar link.");
             }
         }
 
         async function carregarLogs() {
-            const res = await fetch("/get_logs");
-            const logs = await res.json();
-            const tbody = document.getElementById("log-tbody");
-            tbody.innerHTML = "";
+            try {
+                const res = await fetch("/get_logs");
+                if (!res.ok) throw new Error("Erro ao carregar logs");
+                const logs = await res.json();
+                const tbody = document.getElementById("log-tbody");
+                tbody.innerHTML = "";
 
-            logs.forEach(log => {
-                const row = `<tr>
-                    <td>${log.data}</td> <!-- Alterado de 'date' para 'data' -->
-                    <td>${log.ip}</td>
-                    <td>${log.localizacao}</td> <!-- Alterado de 'location' para 'localizacao' -->
-                    <td>${log.id}</td>
-                </tr>`;
-                tbody.innerHTML += row;
-            });
+                logs.forEach(log => {
+                    const row = `<tr>
+                        <td>${log.data || '-'}</td>
+                        <td>${log.ip || '-'}</td>
+                        <td>${log.localizacao || '-'}</td>
+                        <td>${log.id || '-'}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } catch (err) {
+                console.error("Falha ao buscar logs:", err);
+            }
         }
 
         setInterval(carregarLogs, 5000);
@@ -51,7 +58,7 @@
 
         <div id="link-area" style="display:none;">
             <h3>LINK GERADO</h3>
-            <p id="link-gerado"></p>
+            <p id="link-gerado" style="word-break: break-all;"></p>
         </div>
 
         <h2>📍 IPs e Localizações</h2>
@@ -64,7 +71,9 @@
                     <th>ID do Link</th>
                 </tr>
             </thead>
-            <tbody id="log-tbody"></tbody>
+            <tbody id="log-tbody">
+                <!-- Logs serão carregados aqui -->
+            </tbody>
         </table>
     </div>
 </body>
